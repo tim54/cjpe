@@ -1,6 +1,6 @@
-package com.kovalevskii.concurrent.queue;
+package com.home.concurrent.queue;
 
-import com.kovalevskii.concurrent.model.Job;
+import com.home.concurrent.model.Job;
 
 import java.util.concurrent.PriorityBlockingQueue;
 

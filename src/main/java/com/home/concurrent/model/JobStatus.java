@@ -1,4 +1,4 @@
-package com.kovalevskii.concurrent.model;
+package com.home.concurrent.model;
 
 enum JobStatus {
     SUCCESS,
