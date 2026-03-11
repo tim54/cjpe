@@ -1,6 +1,6 @@
 package com.home.concurrent.model;
 
-enum JobStatus {
+public enum JobStatus {
     SUCCESS,
     FAILED
 }

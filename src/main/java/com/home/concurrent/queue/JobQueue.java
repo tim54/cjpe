@@ -8,7 +8,7 @@ public class JobQueue {
     private final PriorityBlockingQueue<Job> queue = new PriorityBlockingQueue<>();
 
     public void submit(Job job){
-        queue.add(job);
+        queue.put(job);
     }
 
     public Job take() throws InterruptedException {
