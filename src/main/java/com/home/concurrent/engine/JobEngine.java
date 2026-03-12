@@ -8,18 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class JobEngine {
 
     private final JobQueue jobQueue;
     private final ExecutorService executor;
-    private int workerCount;
-    private int producerCount;
+    private final int workerCount;
+    private final int producerCount;
     private final AtomicLong jobIdGenerator = new AtomicLong(0);
+    private final AtomicBoolean started = new AtomicBoolean(false);
     private final List<Worker> workers = new ArrayList<>();
     private final List<JobProducer> producers = new ArrayList<>();
 
@@ -32,6 +32,10 @@ public final class JobEngine {
     }
 
     public void start(){
+        if (!started.compareAndSet(false, true)) {
+            throw new IllegalStateException("JobEngine has already started");
+        }
+
         for (int i = 0; i < workerCount; i++){
             Worker worker = new Worker("worker-" + i, jobQueue);
             workers.add(worker);
@@ -64,7 +68,7 @@ public final class JobEngine {
         executor.shutdown();
 
         try {
-            if (executor.awaitTermination(10, TimeUnit.SECONDS)) {
+            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
                 List<Runnable> droppedTasks = executor.shutdownNow();
                 if (!executor.awaitTermination(10, TimeUnit.SECONDS)){
                     System.out.println("executor did not termninate clanly; droppedTasks=" + droppedTasks.size());
