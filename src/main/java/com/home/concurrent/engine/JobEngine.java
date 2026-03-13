@@ -71,12 +71,16 @@ public final class JobEngine {
             if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
                 List<Runnable> droppedTasks = executor.shutdownNow();
                 if (!executor.awaitTermination(10, TimeUnit.SECONDS)){
-                    System.out.println("executor did not termninate clanly; droppedTasks=" + droppedTasks.size());
+                    System.out.println("executor did not terminate cleanly; droppedTasks=" + droppedTasks.size());
                 }
             }
         } catch (InterruptedException ie){
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+    }
+
+    public int queueSize(){
+        return jobQueue.size();
     }
 }

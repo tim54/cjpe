@@ -13,7 +13,7 @@ public final class JobProducer implements Runnable {
 
     private final String name;
     private final JobQueue jobQueue;
-    private AtomicLong idGenerator;
+    private final AtomicLong idGenerator;
     private volatile boolean running = true;
 
     public JobProducer(String name, JobQueue jobQueue, AtomicLong idGenerator){
@@ -41,7 +41,7 @@ public final class JobProducer implements Runnable {
 
                 jobQueue.submit(newJob);
 
-                System.out.println("producer=" + name + " jobId=" + newJob + " priority=" + priority);
+                System.out.println("producer=" + name + " jobId=" + newJob.id() + " priority=" + priority);
 
                 Thread.sleep(ThreadLocalRandom.current().nextInt(200, 500));
             } catch (InterruptedException ie){
