@@ -1,5 +1,7 @@
 package com.home.concurrent.engine;
 
+import com.home.concurrent.metricsregistry.MetricsRegistry;
+import com.home.concurrent.metricsregistry.MetricsSnapshot;
 import com.home.concurrent.producer.JobProducer;
 import com.home.concurrent.queue.JobQueue;
 import com.home.concurrent.worker.Worker;
@@ -23,6 +25,8 @@ public final class JobEngine {
     private final List<Worker> workers = new ArrayList<>();
     private final List<JobProducer> producers = new ArrayList<>();
 
+    private final MetricsRegistry metrics = new MetricsRegistry();
+
 
     public JobEngine(int workerCount, int producerCount){
         this.workerCount = workerCount;
@@ -37,13 +41,13 @@ public final class JobEngine {
         }
 
         for (int i = 0; i < workerCount; i++){
-            Worker worker = new Worker("worker-" + i, jobQueue);
+            Worker worker = new Worker("worker-" + i, jobQueue, metrics);
             workers.add(worker);
             executor.submit(worker);
         }
 
         for (int i = 0; i < producerCount; i++){
-            JobProducer producer = new JobProducer("producer-" + i, jobQueue, jobIdGenerator);
+            JobProducer producer = new JobProducer("producer-" + i, jobQueue, jobIdGenerator, metrics);
             producers.add(producer);
             executor.submit(producer);
         }
@@ -82,5 +86,16 @@ public final class JobEngine {
 
     public int queueSize(){
         return jobQueue.size();
+    }
+
+    public void printMetrics(){
+        MetricsSnapshot snapshot = metrics.snapshot();
+        System.out.println("metrics jobsProduced=" + snapshot.jobsProduced()
+                + " jobsStarted=" + snapshot.jobsStarted()
+                + " jobsCompleted=" + snapshot.jobsCompleted()
+                + " jobsFailed=" + snapshot.jobsFailed()
+                + " activeWorkers=" + snapshot.activeWorkers()
+                + " queueSize=" + snapshot.queueSize()
+        );
     }
 }

@@ -16,7 +16,12 @@ public class Main {
 
             jobEngine.start();
 
-            TimeUnit.SECONDS.sleep(15);
+            int idx = 5;
+            while(idx > 0) {
+                TimeUnit.SECONDS.sleep(3);
+                jobEngine.printMetrics();
+                idx--;
+            }
 
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
@@ -25,5 +30,6 @@ public class Main {
 
             System.out.println("engine=stopped remainingQueueSize=" + jobEngine.queueSize());
         }
+        jobEngine.printMetrics();
     }
 }

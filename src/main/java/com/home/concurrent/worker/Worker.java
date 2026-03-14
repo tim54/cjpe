@@ -1,5 +1,6 @@
 package com.home.concurrent.worker;
 
+import com.home.concurrent.metricsregistry.MetricsRegistry;
 import com.home.concurrent.model.Job;
 import com.home.concurrent.model.JobResult;
 import com.home.concurrent.model.JobStatus;
@@ -13,9 +14,12 @@ public final class Worker implements Runnable {
     private volatile boolean running = true;
     private volatile Thread workerThread;
 
-    public Worker(String name, JobQueue jobQueue) {
+    private final MetricsRegistry metrics;
+
+    public Worker(String name, JobQueue jobQueue, MetricsRegistry metrics) {
         this.name = Objects.requireNonNull(name);
         this.jobQueue = Objects.requireNonNull(jobQueue);
+        this.metrics = Objects.requireNonNull(metrics);
     }
 
     @Override
@@ -26,6 +30,7 @@ public final class Worker implements Runnable {
         while (running) {
             try {
                 Job job = jobQueue.take();
+                metrics.queueDecremented();
                 process(job);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
@@ -44,12 +49,19 @@ public final class Worker implements Runnable {
         long startNanos = System.nanoTime();
         JobResult result;
 
+        metrics.workerStarted();
+        metrics.incrementStarted();
+
         try {
             result = Objects.requireNonNull(job.task().call(), "JobResult must not be null");
+            metrics.incrementCompleted();
         } catch (Exception e) {
             result = new JobResult(job.id(), JobStatus.FAILED, System.currentTimeMillis(),
                     "error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
+            metrics.incrementFailed();
         }
+
+
 
         long elapsedNanos = System.nanoTime() - startNanos;
         double elapsedMs = elapsedNanos / 1_000_000.0;
@@ -68,6 +80,8 @@ public final class Worker implements Runnable {
                     + " status=SUCCESS"
                     + " elapsedMs=" + elapsedMs);
         }
+
+        metrics.workerStopped();
     }
 
     public void stop() {

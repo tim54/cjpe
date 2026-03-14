@@ -1,5 +1,6 @@
 package com.home.concurrent.producer;
 
+import com.home.concurrent.metricsregistry.MetricsRegistry;
 import com.home.concurrent.model.Job;
 import com.home.concurrent.model.JobResult;
 import com.home.concurrent.model.JobStatus;
@@ -16,10 +17,13 @@ public final class JobProducer implements Runnable {
     private final AtomicLong idGenerator;
     private volatile boolean running = true;
 
-    public JobProducer(String name, JobQueue jobQueue, AtomicLong idGenerator){
+    private final MetricsRegistry metrics;
+
+    public JobProducer(String name, JobQueue jobQueue, AtomicLong idGenerator, MetricsRegistry metrics){
         this.name = Objects.requireNonNull(name);
         this.jobQueue = Objects.requireNonNull(jobQueue);
         this.idGenerator = Objects.requireNonNull(idGenerator);
+        this.metrics = Objects.requireNonNull(metrics);
     }
 
     @Override
@@ -39,7 +43,11 @@ public final class JobProducer implements Runnable {
                     return new JobResult(id, JobStatus.SUCCESS, System.currentTimeMillis(), "Job Completed");
                 });
 
+                metrics.incrementProduced();
+
                 jobQueue.submit(newJob);
+
+                metrics.queueIncremented();
 
                 System.out.println("producer=" + name + " jobId=" + newJob.id() + " priority=" + priority);
 
