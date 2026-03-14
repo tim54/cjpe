@@ -3,7 +3,7 @@ package com.home.concurrent.metricsregistry;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
-public class MetricsRegistry {
+public final class MetricsRegistry {
     private final LongAdder jobsProduced = new LongAdder();
     private final LongAdder jobsStarted = new LongAdder();
     private final LongAdder jobsCompleted = new LongAdder();
@@ -30,12 +30,22 @@ public class MetricsRegistry {
 
     public void workerStarted(){
         activeWorkers.incrementAndGet();
+    }
+
+    public void workerStopped() {
+        activeWorkers.decrementAndGet();
+    }
+
+    public void queueIncremented(){
         queueSize.incrementAndGet();
     }
 
-    public void workedStopped() {
-        activeWorkers.decrementAndGet();
+    public void queueDecremented(){
         queueSize.decrementAndGet();
+    }
+
+    public void queueSize(int size){
+        queueSize.set(size);
     }
 
     public MetricsSnapshot snapshot(){
