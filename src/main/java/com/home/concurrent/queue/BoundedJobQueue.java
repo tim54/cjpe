@@ -3,8 +3,6 @@ package com.home.concurrent.queue;
 import com.home.concurrent.model.Job;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,20 +10,24 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BoundedJobQueue {
 
     private final int capacity;
-    private int size;
+    private volatile int size;
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition isQueueFull = lock.newCondition();
     private final Condition isQueueEmpty = lock.newCondition();
-    private final Queue<Job> queue = new LinkedList<>();
+    private final Queue<Job> queue = new ArrayDeque<>();
 
     public BoundedJobQueue(int capacity){
+        if (capacity <= 0){
+            throw new IllegalArgumentException("capacity must be positive");
+        }
+
         this.capacity = capacity;
     }
 
     public void submit(Job job) throws InterruptedException{
         lock.lock();
         try{
-            if(size == capacity){
+            while(size == capacity){
                 isQueueFull.await();
             }
             queue.add(job);
@@ -39,10 +41,10 @@ public class BoundedJobQueue {
     public Job take() throws InterruptedException{
         lock.lock();
         try{
-            if (isEmpty()){
+            while(isEmpty()){
                 isQueueEmpty.await();
             }
-            Job job = queue.poll();
+            Job job = queue.remove();
             size--;
             isQueueFull.signal();
             return job;

@@ -5,10 +5,10 @@ import com.home.concurrent.model.Job;
 import java.util.concurrent.PriorityBlockingQueue;
 
 public class JobQueue {
-    private final PriorityBlockingQueue<Job> queue = new PriorityBlockingQueue<>();
+    private final BoundedJobQueue queue = new BoundedJobQueue(1);
 
-    public void submit(Job job){
-        queue.put(job);
+    public void submit(Job job) throws InterruptedException{
+        queue.submit(job);
     }
 
     public Job take() throws InterruptedException {
