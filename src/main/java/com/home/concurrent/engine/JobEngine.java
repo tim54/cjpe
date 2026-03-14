@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +29,7 @@ public final class JobEngine {
     private final List<JobProducer> producers = new ArrayList<>();
 
     private final MetricsRegistry metrics = new MetricsRegistry();
+    private final Semaphore workerSemaphore = new Semaphore(2);
 
 
     public JobEngine(int workerCount, int producerCount){
@@ -43,7 +45,7 @@ public final class JobEngine {
         }
 
         for (int i = 0; i < workerCount; i++){
-            Worker worker = new Worker("worker-" + i, jobQueue, metrics);
+            Worker worker = new Worker("worker-" + i, jobQueue, metrics, workerSemaphore);
             workers.add(worker);
             executor.submit(worker);
         }

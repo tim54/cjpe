@@ -7,6 +7,7 @@ import com.home.concurrent.model.JobStatus;
 import com.home.concurrent.queue.JobQueue;
 
 import java.util.Objects;
+import java.util.concurrent.Semaphore;
 
 public final class Worker implements Runnable {
     private final String name;
@@ -15,11 +16,13 @@ public final class Worker implements Runnable {
     private volatile Thread workerThread;
 
     private final MetricsRegistry metrics;
+    private final Semaphore semaphore;
 
-    public Worker(String name, JobQueue jobQueue, MetricsRegistry metrics) {
+    public Worker(String name, JobQueue jobQueue, MetricsRegistry metrics, Semaphore semaphore) {
         this.name = Objects.requireNonNull(name);
         this.jobQueue = Objects.requireNonNull(jobQueue);
         this.metrics = Objects.requireNonNull(metrics);
+        this.semaphore = Objects.requireNonNull(semaphore);
     }
 
     @Override
@@ -53,15 +56,16 @@ public final class Worker implements Runnable {
         metrics.incrementStarted();
 
         try {
+            semaphore.acquire();
             result = Objects.requireNonNull(job.task().call(), "JobResult must not be null");
             metrics.incrementCompleted();
         } catch (Exception e) {
             result = new JobResult(job.id(), JobStatus.FAILED, System.currentTimeMillis(),
                     "error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
             metrics.incrementFailed();
+        } finally {
+            semaphore.release();
         }
-
-
 
         long elapsedNanos = System.nanoTime() - startNanos;
         double elapsedMs = elapsedNanos / 1_000_000.0;

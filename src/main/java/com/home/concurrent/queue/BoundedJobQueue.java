@@ -10,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class BoundedJobQueue implements JobQueue{
 
     private final int capacity;
-    private volatile int size;
+    private int size;
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition isQueueFull = lock.newCondition();
     private final Condition isQueueEmpty = lock.newCondition();
@@ -25,7 +25,7 @@ public final class BoundedJobQueue implements JobQueue{
     }
 
     public void submit(Job job) throws InterruptedException{
-        lock.lock();
+        lock.lockInterruptibly();
         try{
             while(size == capacity){
                 isQueueFull.await();
@@ -39,7 +39,7 @@ public final class BoundedJobQueue implements JobQueue{
     }
 
     public Job take() throws InterruptedException{
-        lock.lock();
+        lock.lockInterruptibly();
         try{
             while(isEmpty()){
                 isQueueEmpty.await();
@@ -55,7 +55,13 @@ public final class BoundedJobQueue implements JobQueue{
     }
 
     public int size(){
-        return size;
+        lock.lock();
+        try {
+            return size;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public boolean isEmpty(){
