@@ -23,7 +23,7 @@ public class Main {
         } finally {
             jobEngine.stop();
 
-            System.out.println("Engine stopped. Remaining queue size is " + jobEngine.queueSize());
+            System.out.println("engine=stopped remainingQueueSize=" + jobEngine.queueSize());
         }
     }
 }
