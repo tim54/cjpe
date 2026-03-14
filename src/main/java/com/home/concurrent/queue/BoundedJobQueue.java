@@ -7,7 +7,7 @@ import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class BoundedJobQueue {
+public final class BoundedJobQueue implements JobQueue{
 
     private final int capacity;
     private volatile int size;

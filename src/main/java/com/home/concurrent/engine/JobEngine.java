@@ -3,7 +3,9 @@ package com.home.concurrent.engine;
 import com.home.concurrent.metricsregistry.MetricsRegistry;
 import com.home.concurrent.metricsregistry.MetricsSnapshot;
 import com.home.concurrent.producer.JobProducer;
+import com.home.concurrent.queue.BoundedJobQueue;
 import com.home.concurrent.queue.JobQueue;
+import com.home.concurrent.queue.PriorityJobQueue;
 import com.home.concurrent.worker.Worker;
 
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ public final class JobEngine {
         this.workerCount = workerCount;
         this.producerCount = producerCount;
         this.executor = Executors.newFixedThreadPool(workerCount + producerCount);
-        this.jobQueue = new JobQueue();
+        this.jobQueue = new BoundedJobQueue(50);
     }
 
     public void start(){
