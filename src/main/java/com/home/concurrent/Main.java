@@ -2,6 +2,8 @@ package com.home.concurrent;
 
 import com.home.concurrent.engine.JobEngine;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -16,11 +18,14 @@ public class Main {
 
             jobEngine.start();
 
-            int idx = 5;
-            while(idx > 0) {
-                TimeUnit.SECONDS.sleep(3);
-                jobEngine.printMetrics();
-                idx--;
+            try (ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1)){
+                scheduler.scheduleAtFixedRate(
+                        jobEngine::printMetrics,
+                        3,
+                        3,
+                        TimeUnit.SECONDS
+                );
+                TimeUnit.SECONDS.sleep(15);
             }
 
         } catch (InterruptedException ie) {
