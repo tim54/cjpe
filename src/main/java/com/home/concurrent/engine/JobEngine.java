@@ -29,7 +29,7 @@ public final class JobEngine {
     private final List<JobProducer> producers = new ArrayList<>();
 
     private final MetricsRegistry metrics = new MetricsRegistry();
-    private final Semaphore workerSemaphore = new Semaphore(2);
+    private final Semaphore workerSemaphore = new Semaphore(2, true);
 
 
     public JobEngine(int workerCount, int producerCount){
