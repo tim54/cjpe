@@ -5,4 +5,7 @@ public record ConfigSnapshot(
         int producerDelayMin,
         int producerDelayMax
 ) {
+    public String toString(){
+        return String.format("ConfigSnapshot{maxConcurrentJobs=%d, producerDelayMin=%d, producerDelayMax=%d}", maxConcurrentJobs, producerDelayMin, producerDelayMax);
+    }
 }

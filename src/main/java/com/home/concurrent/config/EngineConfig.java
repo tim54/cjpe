@@ -11,6 +11,7 @@ public final class EngineConfig {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public EngineConfig(int maxConcurrentJobs, int producerDelayMin, int producerDelayMax){
+        checkInputs(maxConcurrentJobs, producerDelayMin, producerDelayMax);
         this.maxConcurrentJobs = maxConcurrentJobs;
         this.producerDelayMin = producerDelayMin;
         this.producerDelayMax = producerDelayMax;
@@ -26,6 +27,7 @@ public final class EngineConfig {
     }
 
     public void updateConfig(int maxConcurrentJobs, int producerDelayMin, int producerDelayMax){
+        checkInputs(maxConcurrentJobs, producerDelayMin, producerDelayMax);
         lock.writeLock().lock();
         try{
             this.maxConcurrentJobs = maxConcurrentJobs;
@@ -33,6 +35,18 @@ public final class EngineConfig {
             this.producerDelayMax = producerDelayMax;
         } finally{
             lock.writeLock().unlock();
+        }
+    }
+
+    void checkInputs(int maxConcurrentJobs, int producerDelayMin, int producerDelayMax ){
+        if (maxConcurrentJobs <= 0) {
+            throw new IllegalArgumentException("maxConcurrentJobs must be greater than 0");
+        }
+        if (producerDelayMin < 0) {
+            throw new IllegalArgumentException("producerDelayMin must be greater than or equal to 0");
+        }
+        if (producerDelayMax <= producerDelayMin) {
+            throw new IllegalArgumentException("producerDelayMax must be greater than producerDelayMin");
         }
     }
 }
