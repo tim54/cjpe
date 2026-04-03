@@ -30,9 +30,11 @@ public final class EngineConfig {
         checkInputs(maxConcurrentJobs, producerDelayMin, producerDelayMax);
         lock.writeLock().lock();
         try{
+            int oldMaxConcurrentJobs = this.maxConcurrentJobs;
             this.maxConcurrentJobs = maxConcurrentJobs;
             this.producerDelayMin = producerDelayMin;
             this.producerDelayMax = producerDelayMax;
+            System.out.println("maxConcurrentJobs=" + maxConcurrentJobs + ", oldMaxConcurrentJobs=" + oldMaxConcurrentJobs);
         } finally{
             lock.writeLock().unlock();
         }
