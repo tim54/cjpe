@@ -61,7 +61,6 @@ public final class Worker implements Runnable {
     private void process(Job job) {
         long startNanos = System.nanoTime();
         JobResult result;
-
         metrics.workerStarted();
         metrics.incrementStarted();
 

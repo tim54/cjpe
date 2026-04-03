@@ -23,22 +23,26 @@ public class JobPipeline {
 
     public JobResult process(Job job){
         phaser.register();
-        JobResult result = null;
-
-        validate(job);
-        phaser.arriveAndAwaitAdvance();
-        enrich(job);
-        phaser.arriveAndAwaitAdvance();
         try {
-            result = execute(job);
-        } catch (Exception e) {
-            result = new JobResult(job.id(), JobStatus.FAILED, System.currentTimeMillis(),
-                    "error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
+            JobResult result = null;
+
+            validate(job);
+            phaser.arriveAndAwaitAdvance();
+            enrich(job);
+            phaser.arriveAndAwaitAdvance();
+            try {
+                result = execute(job);
+            } catch (Exception e) {
+                result = new JobResult(job.id(), JobStatus.FAILED, System.currentTimeMillis(),
+                        "error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+            phaser.arriveAndAwaitAdvance();
+            persist(job, result);
+            phaser.arriveAndAwaitAdvance();
+            return result;
+        } finally{
+            phaser.arriveAndDeregister();
         }
-        phaser.arriveAndAwaitAdvance();
-        persist(job, result);
-        phaser.arriveAndAwaitAdvance();
-        return result;
     }
 
     public void shutdown(){
