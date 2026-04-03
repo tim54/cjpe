@@ -1,5 +1,7 @@
 package com.home.concurrent.producer;
 
+import com.home.concurrent.config.ConfigSnapshot;
+import com.home.concurrent.config.EngineConfig;
 import com.home.concurrent.metricsregistry.MetricsRegistry;
 import com.home.concurrent.model.Job;
 import com.home.concurrent.model.JobResult;
@@ -18,20 +20,25 @@ public final class JobProducer implements Runnable {
     private volatile boolean running = true;
 
     private final MetricsRegistry metrics;
+    private final EngineConfig cfg;
 
-    public JobProducer(String name, JobQueue jobQueue, AtomicLong idGenerator, MetricsRegistry metrics){
+    public JobProducer(String name, JobQueue jobQueue, AtomicLong idGenerator, MetricsRegistry metrics, EngineConfig cfg){
         this.name = Objects.requireNonNull(name);
         this.jobQueue = Objects.requireNonNull(jobQueue);
         this.idGenerator = Objects.requireNonNull(idGenerator);
         this.metrics = Objects.requireNonNull(metrics);
+        this.cfg = Objects.requireNonNull(cfg);
     }
 
     @Override
     public void run() {
+
         while (running){
             String id = "job-" + idGenerator.getAndIncrement();
             int priority = ThreadLocalRandom.current().nextInt(1, 5);
             long createdAt = System.currentTimeMillis();
+
+            ConfigSnapshot cfgSnapshot = cfg.getConfig();
 
             try {
 
@@ -51,7 +58,7 @@ public final class JobProducer implements Runnable {
 
                 System.out.println("producer=" + name + " jobId=" + newJob.id() + " priority=" + priority);
 
-                Thread.sleep(ThreadLocalRandom.current().nextInt(200, 500));
+                Thread.sleep(ThreadLocalRandom.current().nextInt(cfgSnapshot.producerDelayMin(), cfgSnapshot.producerDelayMax()));
             } catch (InterruptedException ie){
                 Thread.currentThread().interrupt();
                 break;

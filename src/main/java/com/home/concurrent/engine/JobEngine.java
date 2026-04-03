@@ -1,11 +1,14 @@
 package com.home.concurrent.engine;
 
+import com.home.concurrent.config.EngineConfig;
 import com.home.concurrent.metricsregistry.MetricsRegistry;
 import com.home.concurrent.metricsregistry.MetricsSnapshot;
 import com.home.concurrent.producer.JobProducer;
 import com.home.concurrent.queue.BoundedJobQueue;
 import com.home.concurrent.queue.JobQueue;
 import com.home.concurrent.queue.PriorityJobQueue;
+import com.home.concurrent.util.AdjustableSemaphore;
+import com.home.concurrent.util.ConcurrencyLimiter;
 import com.home.concurrent.worker.Worker;
 
 import java.util.ArrayList;
@@ -19,6 +22,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class JobEngine {
 
+    private static final int DEFAULT_MAX_CONCURRENT_JOBS = 2;
+    private static final int DEFAULT_PRODUCER_DELAY_MIN = 100;
+    private static final int DEFAULT_PRODUCER_DELAY_MAX = 500;
+
     private final JobQueue jobQueue;
     private final ExecutorService executor;
     private final int workerCount;
@@ -29,8 +36,12 @@ public final class JobEngine {
     private final List<JobProducer> producers = new ArrayList<>();
 
     private final MetricsRegistry metrics = new MetricsRegistry();
-    private final Semaphore workerSemaphore = new Semaphore(2, true);
-
+    private final ConcurrencyLimiter limiter = new ConcurrencyLimiter(DEFAULT_MAX_CONCURRENT_JOBS);
+    private final EngineConfig cfg = new EngineConfig(
+            DEFAULT_MAX_CONCURRENT_JOBS,
+            DEFAULT_PRODUCER_DELAY_MIN,
+            DEFAULT_PRODUCER_DELAY_MAX
+    );
 
     public JobEngine(int workerCount, int producerCount){
         this.workerCount = workerCount;
@@ -45,13 +56,13 @@ public final class JobEngine {
         }
 
         for (int i = 0; i < workerCount; i++){
-            Worker worker = new Worker("worker-" + i, jobQueue, metrics, workerSemaphore);
+            Worker worker = new Worker("worker-" + i, jobQueue, metrics, cfg, limiter);
             workers.add(worker);
             executor.submit(worker);
         }
 
         for (int i = 0; i < producerCount; i++){
-            JobProducer producer = new JobProducer("producer-" + i, jobQueue, jobIdGenerator, metrics);
+            JobProducer producer = new JobProducer("producer-" + i, jobQueue, jobIdGenerator, metrics, cfg);
             producers.add(producer);
             executor.submit(producer);
         }
@@ -101,5 +112,9 @@ public final class JobEngine {
                 + " activeWorkers=" + snapshot.activeWorkers()
                 + " queueSize=" + snapshot.queueSize()
         );
+    }
+
+    public void updateEngineConfig(int maxConcurrentJobs, int producerDelayMin, int producerDelayMax){
+        cfg.updateConfig(maxConcurrentJobs, producerDelayMin, producerDelayMax);
     }
 }

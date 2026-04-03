@@ -1,10 +1,13 @@
 package com.home.concurrent.worker;
 
+import com.home.concurrent.config.ConfigSnapshot;
+import com.home.concurrent.config.EngineConfig;
 import com.home.concurrent.metricsregistry.MetricsRegistry;
 import com.home.concurrent.model.Job;
 import com.home.concurrent.model.JobResult;
 import com.home.concurrent.model.JobStatus;
 import com.home.concurrent.queue.JobQueue;
+import com.home.concurrent.util.ConcurrencyLimiter;
 
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
@@ -16,13 +19,15 @@ public final class Worker implements Runnable {
     private volatile Thread workerThread;
 
     private final MetricsRegistry metrics;
-    private final Semaphore semaphore;
+    private final EngineConfig cfg;
+    private final ConcurrencyLimiter limiter;
 
-    public Worker(String name, JobQueue jobQueue, MetricsRegistry metrics, Semaphore semaphore) {
+    public Worker(String name, JobQueue jobQueue, MetricsRegistry metrics, EngineConfig cfg, ConcurrencyLimiter limiter) {
         this.name = Objects.requireNonNull(name);
         this.jobQueue = Objects.requireNonNull(jobQueue);
         this.metrics = Objects.requireNonNull(metrics);
-        this.semaphore = Objects.requireNonNull(semaphore);
+        this.cfg = Objects.requireNonNull(cfg);
+        this.limiter = Objects.requireNonNull(limiter);
     }
 
     @Override
@@ -31,6 +36,11 @@ public final class Worker implements Runnable {
         workerThread.setName(name);
 
         while (running) {
+            ConfigSnapshot cfgSnapshot = cfg.getConfig();
+
+            if (cfgSnapshot.maxConcurrentJobs() != limiter.configuredMax())
+                limiter.updateMax(cfgSnapshot.maxConcurrentJobs());
+
             try {
                 Job job = jobQueue.take();
                 metrics.queueDecremented();
@@ -56,7 +66,7 @@ public final class Worker implements Runnable {
         metrics.incrementStarted();
 
         try {
-            semaphore.acquire();
+            limiter.semaphore().acquireUninterruptibly();
             result = Objects.requireNonNull(job.task().call(), "JobResult must not be null");
             metrics.incrementCompleted();
         } catch (Exception e) {
@@ -64,7 +74,7 @@ public final class Worker implements Runnable {
                     "error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
             metrics.incrementFailed();
         } finally {
-            semaphore.release();
+            limiter.semaphore().release();
         }
 
         long elapsedNanos = System.nanoTime() - startNanos;
