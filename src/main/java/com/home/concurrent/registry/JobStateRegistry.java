@@ -2,12 +2,11 @@ package com.home.concurrent.registry;
 
 import com.home.concurrent.model.Job;
 
-import java.sql.Time;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class JobStateRegistry {
+public final class JobStateRegistry {
 
     private final ConcurrentHashMap<String, JobExecutionInfo> jobs = new ConcurrentHashMap<>();
 
@@ -17,18 +16,21 @@ public class JobStateRegistry {
                 JobExecutionState.QUEUED,
                 job.createdAt(),
                 0,
+                0,
                 null,
                 null)
         );
     }
 
     public void onStarted(Job job, String workerName){
+        long now = System.currentTimeMillis();
         jobs.compute(job.id(), (id, existing) -> {
             if (existing == null){
                 return new JobExecutionInfo(job.id(),
                         job.priority(),
                         JobExecutionState.STARTED,
                         job.createdAt(),
+                        now,
                         0,
                         workerName,
                         null);
@@ -38,6 +40,7 @@ public class JobStateRegistry {
                         existing.priority(),
                         JobExecutionState.STARTED,
                         existing.createdAt(),
+                        now,
                         0,
                         workerName,
                         null);
@@ -54,6 +57,7 @@ public class JobStateRegistry {
                         JobExecutionState.SUCCESS,
                         job.createdAt(),
                         now,
+                        now,
                         workerName,
                         message);
             } else {
@@ -62,6 +66,7 @@ public class JobStateRegistry {
                         existing.priority(),
                         JobExecutionState.SUCCESS,
                         existing.createdAt(),
+                        existing.startedAt(),
                         now,
                         workerName,
                         message);
@@ -78,6 +83,7 @@ public class JobStateRegistry {
                         JobExecutionState.FAILED,
                         job.createdAt(),
                         now,
+                        now,
                         workerName,
                         message);
             } else {
@@ -86,6 +92,7 @@ public class JobStateRegistry {
                         existing.priority(),
                         JobExecutionState.FAILED,
                         existing.createdAt(),
+                        existing.startedAt(),
                         now,
                         workerName,
                         message);
@@ -101,7 +108,7 @@ public class JobStateRegistry {
         return jobs.size();
     }
 
-    public Map<String, JobExecutionInfo> snapShot(){
+    public Map<String, JobExecutionInfo> snapshot(){
         return Map.copyOf(jobs);
     }
 

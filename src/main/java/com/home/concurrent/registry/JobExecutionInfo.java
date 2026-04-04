@@ -5,6 +5,7 @@ public record JobExecutionInfo(
         int priority,
         JobExecutionState state,
         long createdAt,
+        long startedAt,
         long finishedAt,
         String workerName,
         String message
